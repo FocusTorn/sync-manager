@@ -256,6 +256,9 @@ fn parse_kv(line: &str) -> Option<(&str, &str)> {
         value = value.trim();
     }
     
+    // Remove surrounding quotes from string values
+    value = value.trim_matches('"').trim_matches('\'');
+    
     // Skip if value is empty (section header)
     if value.is_empty() {
         return None;

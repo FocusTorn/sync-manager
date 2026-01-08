@@ -624,8 +624,8 @@ fn create_highlighted_lines(
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
     let gutter = format!("{:width$} ", line_num, width = max_line_digits);
-    // Show line number on continuation lines too (for wrapped lines)
-    let continuation_gutter = format!("{:width$} ", line_num, width = max_line_digits);
+    // Show blank spaces on continuation lines (no repeated line number for wrapped lines)
+    let continuation_gutter = " ".repeat(max_line_digits + 1);
     
     let mut current_line_spans: Vec<Span> = Vec::new();
     let mut current_width = 0;
@@ -771,18 +771,6 @@ fn create_blank_line(text_width: usize, gutter_width: usize) -> Line<'static> {
         Span::styled(" ".repeat(gutter_width), Styles::gutter()),
         Span::raw(" ".repeat(text_width)),
         Span::raw(" "), // Right margin
-    ])
-}
-
-fn create_blank_line_with_style(
-    text_width: usize,
-    gutter_width: usize,
-    background_style: ratatui::style::Style,
-) -> Line<'static> {
-    Line::from(vec![
-        Span::styled(" ".repeat(gutter_width), Styles::gutter()),
-        Span::styled(" ".repeat(text_width), background_style),
-        Span::styled(" ", background_style), // Right margin
     ])
 }
 

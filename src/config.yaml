@@ -17,10 +17,33 @@ application:
         default_text: "Status: Ready | [q] Quit"
 
 # ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃                                       UI AND DIFF DISPLAY CONFIGURATION                                             ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+ui:
+    show_line_numbers: true
+    syntax_highlighting: false
+    context_lines: 3
+    mouse_enabled: true
+    theme: "default"
+
+defaults:
+    sync_direction: "both" # "both", "to_project", "to_shared"
+    conflict_resolution: "prompt" # "prompt", "newer", "source", "destination"
+    continue_on_error: true
+    create_backups: true
+
+# Side-by-side diff highlight colors (hex values, with or without # prefix)
+colors:
+    source_dim_bg: "#370404" # Dim red background for modified source lines
+    source_bright_bg: "#5f0303" # Bright red background for added/removed source lines
+    dest_dim_bg: "#232915" # Dim green background for modified destination lines
+    dest_bright_bg: "#50661f" # Bright green background for added/removed destination lines
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 # ┃                                          TAB BARS COMPONENT CONFIGURATION                                          ┃
 # ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 tab_bars:
-
     # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
     # │                            Main Content Tab Bar (MainContentTabBar)                            │
     # └────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -54,8 +77,7 @@ tab_bars:
                   value: "Sync Manager Dashboard"
 
 tab_content:
-
     - tab_id: "dashboard"
       bindings:
-        - key: "[q]"
-          description: "Quit"
+          - key: "[q]"
+            description: "Quit"

@@ -179,8 +179,6 @@ fn main() {
     
     // Simulate what would be rendered
     println!("=== SIMULATED RENDERING (first 12 alignments) ===");
-    let mut left_line_num = 1;
-    let mut right_line_num = 1;
     
     for (idx, alignment) in aligned.iter().take(12).enumerate() {
         match alignment {
