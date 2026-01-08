@@ -1,0 +1,154 @@
+# Tabbed Manager Configuration
+# Configuration file for the Layout Demo - Tabbed Manager application
+
+application:
+    title: "Layout Demo - Tabbed Manager"
+
+    # Global keyboard bindings
+    bindings:
+        - key: "[q]"
+          description: "Quit"
+        - key: "[7]"
+          description: "Tabbed style"
+        - key: "[8]"
+          description: "Boxed style"
+        - key: "[9]"
+          description: "Text style"
+        - key: "[Alt+8]"
+          description: "BoxStatic style"
+        - key: "[Alt+9]"
+          description: "TextStatic style"
+        - key: "[p]"
+          description: "Cycle popups"
+        - key: "[t]"
+          description: "Show toast"
+
+        - key: "[f]"
+          description: "Fold/Unfold diff (Diff tab)"
+        - key: "[↑/↓]"
+          description: "Scroll diff (Diff tab)"
+        - key: "[PgUp/PgDn]"
+          description: "Page scroll diff (Diff tab)"
+
+    # Status bar configuration
+    status_bar:
+        default_text: "Status: Ready | [7] Tabbed | [8] Boxed | [9] Text | [Alt+8] BoxStatic | [Alt+9] TextStatic | [p] Cycle Popups | [t] Toast | [f] Fold Diff | [↑/↓] Scroll Diff | [q] Quit"
+        modal_text: "Modal active - Press 'm' to close | Use arrow keys to navigate | Enter to confirm | Esc to cancel"
+
+
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃                                          TAB BARS COMPONENT CONFIGURATION                                          ┃
+#>┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+tab_bars:
+
+
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                            Main Content Tab Bar (MainContentTabBar)                            │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+    
+    main_content_tab_bar:
+        hwnd: "hwndMainContentTabBar" # must match constant defined in code
+        anchor: "hwndMainContentBox"
+
+        alignment:
+            vertical: "top" # Options: "top", "bottom"
+            horizontal: "center" # Options: "left", "center", "right"
+            offset_x: 0 # Horizontal offset in characters
+            offset_y: 0 # Vertical offset in lines
+
+        style: "tabbed" # Options: tabbed, boxed, text, box_static, text_static
+        color: "cyan" # Color for active tab (ratatui color name)
+
+        min_tab_width: 8 # Minimum width per tab
+        tab_tooltips: true # Show tooltips on hover
+
+        navigation: # optional - defaults to Left/Right and h/l
+            left: ["Left", "h"] # Keys to navigate to previous tab
+            right: ["Right", "l"] # Keys to navigate to next tab
+
+        tabs:
+            - id: "diff"
+              name: "Diff"
+              default: "active"
+              content:
+                  type: "text" # Options: text, widget, custom
+                  value: "Side by side diff view"
+
+            - id: "tab2"
+              name: "Tab 2"
+              content:
+                  type: "text"
+                  value: "Tab 2"
+
+            - id: "tab3"
+              name: "Tab 3"
+              content:
+                  type: "text"
+                  value: "Tab 3"
+
+
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                   MAIN CONTENT STATIC TAB BAR (hwndMainContentStaticTabBar)                    │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
+            
+    main_content_static_tab_bar:
+        hwnd: "hwndMainContentStaticTabBar" # must match constant defined in code
+        anchor: "hwndMainContentBox"
+        alignment:
+            vertical: "bottom" # Options: "top", "bottom"
+            horizontal: "left" # Options: "left", "center", "right"
+            offset_x: 0 # Horizontal offset in characters
+            offset_y: 0 # Vertical offset in lines
+
+        style: "box_static" # Options: tabbed, boxed, text, box_static, text_static
+        type: state
+        colors:
+            active: "green"
+            negate: "red"
+            disabled: null
+
+        min_tab_width: 8 # Minimum width per tab
+        tab_tooltips: true # Show tooltips on hover
+        offset_x: 0 # Horizontal offset
+        offset_y: 0 # Vertical offset
+
+        # navigation: # optional - defaults to Left/Right and h/l
+        #     left: ["Left", "h"] # Keys to navigate to previous tab
+        #     right: ["Right", "l"] # Keys to navigate to next tab
+
+        tabs:
+            - id: "static1"
+              name: "Static 1"
+              default: active
+
+            - id: "static2"
+              name: "Static 2"
+
+#<-----------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+content:
+    render_borders: true
+    border_style: "default" # Options: default, rounded, double, thick
+
+    widgets: # optional
+        dashboard:
+            type: "text"
+            text: "Dashboard content area"
+
+        changes:
+            type: "text"
+            text: "Changes content area"
+
+        baselines:
+            type: "text"
+            text: "Baselines content area"

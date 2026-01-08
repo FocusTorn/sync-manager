@@ -1,0 +1,54 @@
+# Sync Manager - Project Configuration Example
+# Copy this file to your project root as 'sync-manager.yaml'
+# This file defines what files/directories to sync and where
+
+workspace_settings:
+  sync-manager:
+    shared-cursor:
+      mappings:
+        # Each mapping defines a source (shared) and destination (project) path
+        - shared: _shared-resources/shared-cursor/commands
+          project: .cursor/commands
+          
+        - shared: _shared-resources/shared-cursor/rules
+          project: .cursor/rules
+          # Exclude specific patterns from this mapping
+          exclude:
+            - "_*-workspace/"
+            - "!_my-project-workspace"  # Negation: include this one
+
+# Managed packages - define shared resource locations
+managed_packages:
+  - name: shared-cursor
+    type: cursor-rules
+    enabled: true
+    description: Cursor rules and commands shared across projects
+    location: shared-cursor
+    git_remote: origin
+    
+  - name: shared-rust
+    type: generic
+    enabled: true
+    description: Shared Rust resources
+    location: shared-rust
+    git_remote: origin
+
+# Global settings that apply to all sync operations
+global_settings:
+  # Sync direction: "both", "to_project", "to_shared"
+  sync_direction: both
+  
+  # Conflict resolution: "prompt", "newer", "source", "destination"
+  conflict_resolution: prompt
+  
+  # Check for updates interval in seconds (0 = disabled)
+  auto_check_interval: 0
+  
+  # Show changelog when packages are updated
+  show_changelog: true
+  
+  # Continue syncing even if individual files fail
+  continue_on_error: true
+  
+  # Auto-initialize git repository if not present
+  auto_init_repo: false

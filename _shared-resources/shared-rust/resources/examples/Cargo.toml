@@ -1,0 +1,77 @@
+[workspace]
+members = [
+    # Examples are in this package
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["FocusTorn <FocusTorn@gmail.com>"]
+license = "MIT"
+
+[workspace.dependencies]
+ratatui = "0.29.0"
+crossterm = "0.29.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+# serde_json = "1.0"
+# chrono = "0.4"
+# clap = { version = "4.5", features = ["derive"] }
+# arboard = "3.3"
+# dashmap = "6.1"
+# md5 = "0.7"
+# sha2 = "0.10"
+# notify = "8.2.0"
+# num_cpus = "1.16"
+# rayon = "1.10"
+# tachyonfx = "0.7"
+# threadpool = "1.8"
+# tokio = "1.48.0"
+# ratatui-widgets = "0.3.0-alpha.5"
+
+[package]
+name = "component-examples"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Standalone examples for TUI components"
+
+
+
+
+
+
+[[bin]]
+name = "LayoutDemo__TabbedManager"
+path = "src/LayoutDemo__TabbedManager.rs"
+
+[[bin]]
+name = "tab_bar_example"
+path = "src/tab_bar_example.rs"
+
+[[bin]]
+name = "tab-bar-styles-example"
+path = "src/tab_bar_styles_example.rs"
+
+[[bin]]
+name = "tab-bar-positioning-example"
+path = "src/tab_bar_positioning_example.rs"
+
+[[bin]]
+name = "base_layout_example"
+path = "src/base_layout_example.rs"
+
+
+[dependencies]
+# Shared components (path dependency, not workspace member)
+tui-components = { path = "../components" }
+
+# TUI dependencies
+ratatui.workspace = true
+crossterm.workspace = true
+
+# Configuration parsing
+serde.workspace = true
+serde_yaml.workspace = true
