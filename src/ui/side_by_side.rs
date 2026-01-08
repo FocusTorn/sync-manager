@@ -118,9 +118,23 @@ fn build_aligned_lines(
 
     const CONTEXT_LINES: usize = 3;
 
+    // Helper to normalize empty/whitespace-only lines for comparison
+    fn normalize_for_comparison(line: &str) -> &str {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            ""
+        } else {
+            line
+        }
+    }
+    
     let has_changes = |line_type: &LineAlignment| -> bool {
         match line_type {
-            LineAlignment::Both(src_idx, dest_idx) => source_lines[*src_idx] != dest_lines[*dest_idx],
+            LineAlignment::Both(src_idx, dest_idx) => {
+                let src_norm = normalize_for_comparison(&source_lines[*src_idx]);
+                let dest_norm = normalize_for_comparison(&dest_lines[*dest_idx]);
+                src_norm != dest_norm
+            }
             LineAlignment::SourceOnly(_) | LineAlignment::DestOnly(_) => true,
         }
     };
@@ -134,7 +148,9 @@ fn build_aligned_lines(
             while j < aligned.len() {
                 match &aligned[j] {
                     LineAlignment::Both(src_idx, dest_idx) => {
-                        if source_lines[*src_idx] == dest_lines[*dest_idx] {
+                        let src_norm = normalize_for_comparison(&source_lines[*src_idx]);
+                        let dest_norm = normalize_for_comparison(&dest_lines[*dest_idx]);
+                        if src_norm == dest_norm {
                             unchanged_count += 1;
                             j += 1;
                         } else {
@@ -222,7 +238,16 @@ fn build_aligned_lines(
             LineAlignment::Both(src_idx, dest_idx) => {
                 let src_line = &source_lines[*src_idx];
                 let dest_line = &dest_lines[*dest_idx];
-                let is_same = src_line == dest_line;
+                // Normalize empty/whitespace-only lines for comparison
+                let src_normalized = src_line.trim();
+                let dest_normalized = dest_line.trim();
+                // If both are empty after normalization, treat as same
+                // Otherwise, compare the original lines
+                let is_same = if src_normalized.is_empty() && dest_normalized.is_empty() {
+                    true
+                } else {
+                    src_line == dest_line
+                };
 
                 if is_same {
                     add_unchanged_line(
@@ -501,7 +526,8 @@ fn create_highlighted_lines(
 ) -> Vec<Line<'static>> {
     let mut lines = Vec::new();
     let gutter = format!("{:width$} ", line_num, width = max_line_digits);
-    let continuation_gutter = " ".repeat(gutter_width);
+    // Show line number on continuation lines too (for wrapped lines)
+    let continuation_gutter = format!("{:width$} ", line_num, width = max_line_digits);
     
     let mut current_line_spans: Vec<Span> = Vec::new();
     let mut current_width = 0;

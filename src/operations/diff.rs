@@ -304,16 +304,20 @@ pub enum LineAlignment {
 /// Check if two lines are similar enough to show as modified (Both) vs separate (SourceOnly/DestOnly)
 /// Lines are considered similar if they share significant content
 fn lines_are_similar(line1: &str, line2: &str) -> bool {
-    if line1.is_empty() && line2.is_empty() {
+    // Normalize empty/whitespace-only lines
+    let norm1 = normalize_line_for_comparison(line1);
+    let norm2 = normalize_line_for_comparison(line2);
+    
+    if norm1.is_empty() && norm2.is_empty() {
         return true;
     }
-    if line1.is_empty() || line2.is_empty() {
+    if norm1.is_empty() || norm2.is_empty() {
         return false;
     }
     
     // Check if lines share significant word overlap
-    let words1: std::collections::HashSet<&str> = line1.split_whitespace().collect();
-    let words2: std::collections::HashSet<&str> = line2.split_whitespace().collect();
+    let words1: std::collections::HashSet<&str> = norm1.split_whitespace().collect();
+    let words2: std::collections::HashSet<&str> = norm2.split_whitespace().collect();
     
     let intersection: usize = words1.intersection(&words2).count();
     let union: usize = words1.union(&words2).count();
@@ -327,6 +331,23 @@ fn lines_are_similar(line1: &str, line2: &str) -> bool {
     similarity > 0.3
 }
 
+/// Normalize a line for comparison (trim whitespace, treat empty/whitespace-only as empty)
+fn normalize_line_for_comparison(line: &str) -> &str {
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        ""
+    } else {
+        line
+    }
+}
+
+/// Check if two lines are equal (normalizing empty/whitespace-only lines)
+fn lines_equal_normalized(line1: &str, line2: &str) -> bool {
+    let norm1 = normalize_line_for_comparison(line1);
+    let norm2 = normalize_line_for_comparison(line2);
+    norm1 == norm2
+}
+
 /// Align lines between source and destination using LCS (Longest Common Subsequence)
 /// This finds the optimal alignment by maximizing matching lines
 pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
@@ -336,11 +357,33 @@ pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
     // dp[i][j] = length of LCS of source[0..i] and dest[0..j]
     let mut dp = vec![vec![0u32; m + 1]; n + 1];
     
-    // Fill DP table
+    // Fill DP table - normalize empty/whitespace-only lines for comparison
+    // Allow empty lines to match more freely, but prefer matching non-empty lines
     for i in 1..=n {
         for j in 1..=m {
-            if source[i - 1] == dest[j - 1] {
-                dp[i][j] = dp[i - 1][j - 1] + 1;
+            let src_norm = normalize_line_for_comparison(&source[i - 1]);
+            let dest_norm = normalize_line_for_comparison(&dest[j - 1]);
+            
+            if src_norm == dest_norm {
+                // Lines match (normalized)
+                // For empty lines, prefer matching if they're at similar positions
+                // but allow matching at different positions if it improves alignment
+                if src_norm.is_empty() {
+                    // Empty lines can match, but prefer matching non-empty lines
+                    // Only match empty lines if it doesn't prevent better non-empty matches
+                    let match_score = dp[i - 1][j - 1] + 1;
+                    let skip_score = dp[i - 1][j].max(dp[i][j - 1]);
+                    // Prefer matching if positions are close (within 2) or if it improves LCS
+                    let positions_close = (i as i32 - j as i32).abs() <= 2;
+                    if positions_close || match_score > skip_score {
+                        dp[i][j] = match_score;
+                    } else {
+                        dp[i][j] = skip_score;
+                    }
+                } else {
+                    // Non-empty matching lines - always match them
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                }
             } else {
                 dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
             }
@@ -348,45 +391,62 @@ pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
     }
     
     // Backtrack to build alignment
-    // When backtracking, we prefer matching lines when they're equal
-    // Otherwise, we choose the path that maintains the LCS length
+    // Standard LCS backtracking - empty lines only match at same position (enforced in DP table)
     let mut aligned = Vec::new();
     let mut i = n;
     let mut j = m;
     
     while i > 0 || j > 0 {
-        if i > 0 && j > 0 && source[i - 1] == dest[j - 1] {
-            // Lines match exactly - always prefer this (part of LCS)
-            aligned.push(LineAlignment::Both(i - 1, j - 1));
-            i -= 1;
-            j -= 1;
-        } else if i > 0 && j > 0 {
-            // Lines don't match - choose path that maintains LCS
-            // Check if lines are similar enough to show as modified (Both) vs separate (SourceOnly/DestOnly)
-            let src_line = &source[i - 1];
-            let dest_line = &dest[j - 1];
+        if i > 0 && j > 0 {
+            let src_norm = normalize_line_for_comparison(&source[i - 1]);
+            let dest_norm = normalize_line_for_comparison(&dest[j - 1]);
             
-            // If lines share significant content, show as Both (modified) for word-level diff
-            // Otherwise, show as separate insertions/deletions
-            let are_similar = lines_are_similar(src_line, dest_line);
-            
-            if are_similar {
-                // Lines are similar - show as Both (modified) for word-level highlighting
-                aligned.push(LineAlignment::Both(i - 1, j - 1));
-                i -= 1;
-                j -= 1;
-            } else if dp[i - 1][j] > dp[i][j - 1] {
-                // Removing from source maintains better LCS
-                aligned.push(LineAlignment::SourceOnly(i - 1));
-                i -= 1;
-            } else if dp[i][j - 1] > dp[i - 1][j] {
-                // Removing from dest maintains better LCS
-                aligned.push(LineAlignment::DestOnly(j - 1));
-                j -= 1;
+            if src_norm == dest_norm {
+                // Lines match (normalized)
+                // Check if this match was part of the LCS
+                if dp[i][j] == dp[i - 1][j - 1] + 1 {
+                    // This match was part of the LCS
+                    aligned.push(LineAlignment::Both(i - 1, j - 1));
+                    i -= 1;
+                    j -= 1;
+                } else {
+                    // This match wasn't part of the LCS - choose path that maintains LCS
+                    if dp[i - 1][j] >= dp[i][j - 1] {
+                        aligned.push(LineAlignment::SourceOnly(i - 1));
+                        i -= 1;
+                    } else {
+                        aligned.push(LineAlignment::DestOnly(j - 1));
+                        j -= 1;
+                    }
+                }
             } else {
-                // Tie - prefer showing as separate changes
-                aligned.push(LineAlignment::SourceOnly(i - 1));
-                i -= 1;
+                // Lines don't match - choose path that maintains LCS
+                // Check if lines are similar enough to show as modified (Both) vs separate (SourceOnly/DestOnly)
+                let src_line = &source[i - 1];
+                let dest_line = &dest[j - 1];
+                
+                // If lines share significant content, show as Both (modified) for word-level diff
+                // Otherwise, show as separate insertions/deletions
+                let are_similar = lines_are_similar(src_line, dest_line);
+                
+                if are_similar {
+                    // Lines are similar - show as Both (modified) for word-level highlighting
+                    aligned.push(LineAlignment::Both(i - 1, j - 1));
+                    i -= 1;
+                    j -= 1;
+                } else if dp[i - 1][j] > dp[i][j - 1] {
+                    // Removing from source maintains better LCS
+                    aligned.push(LineAlignment::SourceOnly(i - 1));
+                    i -= 1;
+                } else if dp[i][j - 1] > dp[i - 1][j] {
+                    // Removing from dest maintains better LCS
+                    aligned.push(LineAlignment::DestOnly(j - 1));
+                    j -= 1;
+                } else {
+                    // Tie - prefer showing as separate changes
+                    aligned.push(LineAlignment::SourceOnly(i - 1));
+                    i -= 1;
+                }
             }
         } else if i > 0 {
             // Only source has lines left
@@ -409,7 +469,11 @@ pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
 /// Compute word-level diff for source line
 /// Returns segments with (text, is_changed) where is_changed=true means this part was removed/changed
 pub fn compute_word_diff_source(line: &str, other: &str) -> Vec<(String, bool)> {
-    if line == other {
+    // Normalize empty/whitespace-only lines for comparison
+    let line_norm = normalize_line_for_comparison(line);
+    let other_norm = normalize_line_for_comparison(other);
+    
+    if line_norm == other_norm {
         return vec![(line.to_string(), false)];
     }
     
@@ -476,7 +540,11 @@ pub fn compute_word_diff_source(line: &str, other: &str) -> Vec<(String, bool)> 
 /// Compute word-level diff for destination line
 /// Returns segments with (text, is_changed) where is_changed=true means this part was added/changed
 pub fn compute_word_diff_dest(line: &str, other: &str) -> Vec<(String, bool)> {
-    if line == other {
+    // Normalize empty/whitespace-only lines for comparison
+    let line_norm = normalize_line_for_comparison(line);
+    let other_norm = normalize_line_for_comparison(other);
+    
+    if line_norm == other_norm {
         return vec![(line.to_string(), false)];
     }
     
