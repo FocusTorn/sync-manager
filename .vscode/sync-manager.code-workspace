@@ -25,7 +25,8 @@
         "terminal.integrated.cwd": "D:\\_dev\\_Projects\\sync-manager",
 
         
-        "explorer.compactFolders": true,        
+        "explorer.compactFolders": true,
+        "git.ignoreSubmodules": true,
         
         // "files.watcherExclude": { //>
         //     "**/.git/objects/**": true,

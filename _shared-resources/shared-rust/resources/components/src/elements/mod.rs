@@ -6,7 +6,7 @@ pub mod file_browser;
 pub mod form_panel;
 pub mod list_panel;
 pub mod popup;
-pub mod split_diff_view;
+// pub mod split_diff_view;  // TODO: Uncomment when split_diff manager is created
 pub mod tab_bar;
 pub mod toast;
 
@@ -15,7 +15,7 @@ pub use file_browser::*;
 pub use form_panel::*;
 pub use list_panel::*;
 pub use popup::*;
-pub use split_diff_view::*;
+// pub use split_diff_view::*;  // TODO: Uncomment when split_diff manager is created
 pub use tab_bar::*;
 pub use toast::*;
 

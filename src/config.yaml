@@ -1,61 +1,61 @@
-# Sync Manager - Application Configuration
-# This file contains default settings compiled into the binary at build time
-# Modify this file and rebuild to change the built-in defaults
+# Sync Manager Configuration
+# Configuration file for the Sync Manager TUI application
 
-# UI and display settings
-ui:
-    # Show line numbers in diff views
-    show_line_numbers: true
+application:
+    title: "Sync Manager"
 
-    # Enable syntax highlighting (requires additional feature)
-    syntax_highlighting: false
+    min_width: 80
+    min_height: 21
 
-    # Number of context lines around changes when folding
-    context_lines: 3
+    # Global keyboard bindings
+    bindings:
+        - key: "[q]"
+          description: "Quit"
 
-    # Enable mouse support for navigation and scrolling
-    mouse_enabled: true
+    # Status bar configuration
+    status_bar:
+        default_text: "Status: Ready | [q] Quit"
 
-    # UI theme: "default", "dark", "light"
-    theme: default
+# ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+# ┃                                          TAB BARS COMPONENT CONFIGURATION                                          ┃
+# ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+tab_bars:
 
-    # Side-by-side diff highlight colors (hex codes)
-    colors:
-        # Source (left) side colors - for removed/modified lines
-        source_dim_bg: "#370404" # Dim red background for modified source lines
-        source_bright_bg: "#5f0303" # Bright red background for changed parts
+    # ┌────────────────────────────────────────────────────────────────────────────────────────────────┐
+    # │                            Main Content Tab Bar (MainContentTabBar)                            │
+    # └────────────────────────────────────────────────────────────────────────────────────────────────┘
 
-        # Destination (right) side colors - for added/modified lines
-        dest_dim_bg: "#232915" # Dim green background for modified destination lines
-        dest_bright_bg: "#3B491B" # Bright green background for changed parts
+    main_content_tab_bar:
+        hwnd: "hwndMainContentTabBar"
+        anchor: "hwndMainContentBox"
 
-defaults:
-    # Sync direction: "both", "to_project", "to_shared"
-    sync_direction: both
+        alignment:
+            vertical: "top"
+            horizontal: "center"
+            offset_x: 0
+            offset_y: 0
 
-    # Conflict resolution: "prompt", "newer", "source", "destination"
-    conflict_resolution: prompt
+        style: "tabbed"
+        color: "cyan"
 
-    # Continue syncing even if individual files fail
-    continue_on_error: true
+        min_tab_width: 8
+        tab_tooltips: true
 
-    # Create .backup files before overwriting
-    create_backups: true
+        navigation:
+            left: ["Left"]
+            right: ["Right"]
 
-paths:
-    # Name of the project config file to look for
-    project_config: sync-manager.yaml
+        tabs:
+            - id: "dashboard"
+              name: "Dashboard"
+              default: "active"
+              content:
+                  type: "text"
+                  value: "Sync Manager Dashboard"
 
-    # Global patterns to always exclude (in addition to project-specific excludes)
-    global_excludes:
-        - .git
-        - __pycache__
-        - node_modules
-        - target
-        - .DS_Store
-        - Thumbs.db
-        - "*.swp"
-        - "*.swo"
-        - "*~"
-        - .idea
-        - .vscode
+tab_content:
+
+    - tab_id: "dashboard"
+      bindings:
+        - key: "[q]"
+          description: "Quit"

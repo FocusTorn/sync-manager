@@ -13,6 +13,14 @@ pub mod ui;
 // Utilities - helper functions and tools
 pub mod utilities;
 
+// Dashboard state and rendering
+pub mod dashboard;
+
+// Application constants
+pub mod constants;
+
 // Re-export commonly used items for convenience
 pub use core::{App, AppConfig, ProjectConfig};
 pub use operations::{DiffEngine, SyncEngine, GitOps};
+pub use dashboard::DashboardState;
+pub use constants::*;

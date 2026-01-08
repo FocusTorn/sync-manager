@@ -14,6 +14,9 @@ name = "sync-manager"
 path = "src/main.rs"
 
 [dependencies]
+# Shared components (path dependency)
+tui-components = { path = "_shared-resources/shared-rust/resources/components" }
+
 # TUI framework
 ratatui = "0.29"
 crossterm = "0.29"
