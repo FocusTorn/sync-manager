@@ -80,11 +80,12 @@
         //     "**/_shared-resources": false,
         //     "**/___shared": false,
         // }, //<
-        // "files.exclude": { //>
-        //     "**/.git": true,
-        //     "**/.DS_Store": true,
-        //     "**/Thumbs.db": true
-        // }, //<
+       
+        "files.exclude": { //>
+            "**/.git": false,
+            "**/.DS_Store": true,
+            "**/Thumbs.db": true
+        }, //<
         
 
         // // WSDF ----------------------------------------------------------------------------------->> 

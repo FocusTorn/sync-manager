@@ -276,6 +276,24 @@ fn build_aligned_lines(
                 }
             }
             LineAlignment::SourceOnly(src_idx) => {
+                // Check if next line is a blank line that should be shown as changed
+                let (show_next_blank_as_changed, next_src_idx, next_dest_idx) = if i + 1 < aligned.len() {
+                    if let LineAlignment::Both(ns_idx, nd_idx) = &aligned[i + 1] {
+                        let next_src_norm = normalize_for_comparison(&source_lines[*ns_idx]);
+                        let next_dest_norm = normalize_for_comparison(&dest_lines[*nd_idx]);
+                        // If next line is blank in both, show it as changed below the added line
+                        if next_src_norm.is_empty() && next_dest_norm.is_empty() {
+                            (true, *ns_idx, *nd_idx)
+                        } else {
+                            (false, 0, 0)
+                        }
+                    } else {
+                        (false, 0, 0)
+                    }
+                } else {
+                    (false, 0, 0)
+                };
+                
                 add_source_only_line(
                     &mut source_visible,
                     &mut dest_visible,
@@ -284,9 +302,33 @@ fn build_aligned_lines(
                     text_width,
                     gutter_width,
                     max_line_digits,
+                    if show_next_blank_as_changed { Some((next_src_idx, next_dest_idx)) } else { None },
                 );
+                
+                // If we're showing the next blank as changed, skip it in the main loop
+                if show_next_blank_as_changed {
+                    i += 1; // Skip the next Both alignment since we handled it
+                }
             }
             LineAlignment::DestOnly(dest_idx) => {
+                // Check if next line is a blank line that should be shown as changed
+                let (show_next_blank_as_changed, next_src_idx, next_dest_idx) = if i + 1 < aligned.len() {
+                    if let LineAlignment::Both(ns_idx, nd_idx) = &aligned[i + 1] {
+                        let next_src_norm = normalize_for_comparison(&source_lines[*ns_idx]);
+                        let next_dest_norm = normalize_for_comparison(&dest_lines[*nd_idx]);
+                        // If next line is blank in both, show it as changed below the added line
+                        if next_src_norm.is_empty() && next_dest_norm.is_empty() {
+                            (true, *ns_idx, *nd_idx)
+                        } else {
+                            (false, 0, 0)
+                        }
+                    } else {
+                        (false, 0, 0)
+                    }
+                } else {
+                    (false, 0, 0)
+                };
+                
                 add_dest_only_line(
                     &mut source_visible,
                     &mut dest_visible,
@@ -295,7 +337,13 @@ fn build_aligned_lines(
                     text_width,
                     gutter_width,
                     max_line_digits,
+                    if show_next_blank_as_changed { Some((next_src_idx, next_dest_idx)) } else { None },
                 );
+                
+                // If we're showing the next blank as changed, skip it in the main loop
+                if show_next_blank_as_changed {
+                    i += 1; // Skip the next Both alignment since we handled it
+                }
             }
         }
 
@@ -426,18 +474,20 @@ fn add_source_only_line(
     text_width: usize,
     gutter_width: usize,
     max_line_digits: usize,
+    next_blank_indices: Option<(usize, usize)>,
 ) {
     let src_line = &source_lines[src_idx];
     
     // Create source line (may wrap to multiple lines)
+    // Added lines should be fully bright (like VSCode)
     let src_wrapped = create_highlighted_lines(
         src_idx + 1,
         &[(src_line.clone(), true)],
         text_width,
         gutter_width,
         max_line_digits,
-        Styles::side_by_side_source_modified_bg(),
-        Styles::side_by_side_source_highlight(),
+        Styles::side_by_side_source_highlight(), // Bright background for added lines
+        Styles::side_by_side_source_highlight(), // Same for highlight
     );
     
     source_visible.extend(src_wrapped.clone());
@@ -445,6 +495,29 @@ fn add_source_only_line(
     // Add matching number of blank lines to destination
     for _ in 0..src_wrapped.len() {
         dest_visible.push(create_blank_line(text_width, gutter_width));
+    }
+    
+    // If next line is blank, show it as changed below the added line (bright, like VSCode)
+    if let Some((next_src_idx, next_dest_idx)) = next_blank_indices {
+        let next_src_line = &source_lines[next_src_idx];
+        
+        // Create blank line with bright highlighting (like VSCode shows blank lines below added lines)
+        let blank_wrapped = create_highlighted_lines(
+            next_src_idx + 1,
+            &[(next_src_line.clone(), true)], // Bright highlighting for blank line below added line
+            text_width,
+            gutter_width,
+            max_line_digits,
+            Styles::side_by_side_source_highlight(), // Bright background (like VSCode)
+            Styles::side_by_side_source_highlight(), // Same for highlight
+        );
+        
+        source_visible.extend(blank_wrapped.clone());
+        
+        // Add matching blank lines to destination (unchanged, no background)
+        for _ in 0..blank_wrapped.len() {
+            dest_visible.push(create_blank_line(text_width, gutter_width));
+        }
     }
 }
 
@@ -456,18 +529,20 @@ fn add_dest_only_line(
     text_width: usize,
     gutter_width: usize,
     max_line_digits: usize,
+    next_blank_indices: Option<(usize, usize)>,
 ) {
     let dest_line = &dest_lines[dest_idx];
     
     // Create destination line (may wrap to multiple lines)
+    // Added lines should be fully bright (like VSCode)
     let dest_wrapped = create_highlighted_lines(
         dest_idx + 1,
         &[(dest_line.clone(), true)],
         text_width,
         gutter_width,
         max_line_digits,
-        Styles::side_by_side_dest_modified_bg(),
-        Styles::side_by_side_dest_highlight(),
+        Styles::side_by_side_dest_highlight(), // Bright background for added lines
+        Styles::side_by_side_dest_highlight(), // Same for highlight
     );
     
     dest_visible.extend(dest_wrapped.clone());
@@ -475,6 +550,29 @@ fn add_dest_only_line(
     // Add matching number of blank lines to source
     for _ in 0..dest_wrapped.len() {
         source_visible.push(create_blank_line(text_width, gutter_width));
+    }
+    
+    // If next line is blank, show it as changed below the added line (bright, like VSCode)
+    if let Some((next_src_idx, next_dest_idx)) = next_blank_indices {
+        let next_dest_line = &dest_lines[next_dest_idx];
+        
+        // Create blank line with bright highlighting (like VSCode shows blank lines below added lines)
+        let blank_wrapped = create_highlighted_lines(
+            next_dest_idx + 1,
+            &[(next_dest_line.clone(), true)], // Bright highlighting for blank line below added line
+            text_width,
+            gutter_width,
+            max_line_digits,
+            Styles::side_by_side_dest_highlight(), // Bright background (like VSCode)
+            Styles::side_by_side_dest_highlight(), // Same for highlight
+        );
+        
+        dest_visible.extend(blank_wrapped.clone());
+        
+        // Add matching blank lines to source (unchanged, no background)
+        for _ in 0..blank_wrapped.len() {
+            source_visible.push(create_blank_line(text_width, gutter_width));
+        }
     }
 }
 
@@ -673,6 +771,18 @@ fn create_blank_line(text_width: usize, gutter_width: usize) -> Line<'static> {
         Span::styled(" ".repeat(gutter_width), Styles::gutter()),
         Span::raw(" ".repeat(text_width)),
         Span::raw(" "), // Right margin
+    ])
+}
+
+fn create_blank_line_with_style(
+    text_width: usize,
+    gutter_width: usize,
+    background_style: ratatui::style::Style,
+) -> Line<'static> {
+    Line::from(vec![
+        Span::styled(" ".repeat(gutter_width), Styles::gutter()),
+        Span::styled(" ".repeat(text_width), background_style),
+        Span::styled(" ", background_style), // Right margin
     ])
 }
 

@@ -366,19 +366,22 @@ pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
             
             if src_norm == dest_norm {
                 // Lines match (normalized)
-                // For empty lines, prefer matching if they're at similar positions
-                // but allow matching at different positions if it improves alignment
+                // For empty lines, always match if at same position, otherwise prefer matching if close
                 if src_norm.is_empty() {
-                    // Empty lines can match, but prefer matching non-empty lines
-                    // Only match empty lines if it doesn't prevent better non-empty matches
-                    let match_score = dp[i - 1][j - 1] + 1;
-                    let skip_score = dp[i - 1][j].max(dp[i][j - 1]);
-                    // Prefer matching if positions are close (within 2) or if it improves LCS
-                    let positions_close = (i as i32 - j as i32).abs() <= 2;
-                    if positions_close || match_score > skip_score {
-                        dp[i][j] = match_score;
+                    // Empty lines at the same position should always match
+                    if i == j {
+                        // Same position - always match blank lines
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
                     } else {
-                        dp[i][j] = skip_score;
+                        // Different positions - prefer matching if close or if it improves LCS
+                        let match_score = dp[i - 1][j - 1] + 1;
+                        let skip_score = dp[i - 1][j].max(dp[i][j - 1]);
+                        let positions_close = (i as i32 - j as i32).abs() <= 2;
+                        if positions_close || match_score > skip_score {
+                            dp[i][j] = match_score;
+                        } else {
+                            dp[i][j] = skip_score;
+                        }
                     }
                 } else {
                     // Non-empty matching lines - always match them
@@ -403,8 +406,13 @@ pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
             
             if src_norm == dest_norm {
                 // Lines match (normalized)
-                // Check if this match was part of the LCS
-                if dp[i][j] == dp[i - 1][j - 1] + 1 {
+                // For blank lines at the same position, always match them
+                if src_norm.is_empty() && i == j {
+                    // Blank lines at same position - always match
+                    aligned.push(LineAlignment::Both(i - 1, j - 1));
+                    i -= 1;
+                    j -= 1;
+                } else if dp[i][j] == dp[i - 1][j - 1] + 1 {
                     // This match was part of the LCS
                     aligned.push(LineAlignment::Both(i - 1, j - 1));
                     i -= 1;
