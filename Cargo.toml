@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Dev-Boards Project"]
 description = "Terminal UI for managing file synchronization across projects"
+default-run = "sync-manager"
 
 [lib]
 name = "sync_manager"
@@ -12,6 +13,11 @@ path = "src/lib.rs"
 [[bin]]
 name = "sync-manager"
 path = "src/main.rs"
+
+
+[[bin]]
+name = "debug-diff"
+path = "src/bin/debug_diff.rs"
 
 [dependencies]
 # Shared components (path dependency)

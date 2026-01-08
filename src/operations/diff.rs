@@ -341,137 +341,249 @@ fn normalize_line_for_comparison(line: &str) -> &str {
     }
 }
 
-/// Check if two lines are equal (normalizing empty/whitespace-only lines)
-fn lines_equal_normalized(line1: &str, line2: &str) -> bool {
-    let norm1 = normalize_line_for_comparison(line1);
-    let norm2 = normalize_line_for_comparison(line2);
-    norm1 == norm2
-}
-
 /// Align lines between source and destination using LCS (Longest Common Subsequence)
 /// This finds the optimal alignment by maximizing matching lines
+/// CRITICAL: Blank lines at the same position are ALWAYS matched to preserve line number alignment
 pub fn align_lines(source: &[String], dest: &[String]) -> Vec<LineAlignment> {
     let n = source.len();
     let m = dest.len();
     
-    // dp[i][j] = length of LCS of source[0..i] and dest[0..j]
-    let mut dp = vec![vec![0u32; m + 1]; n + 1];
+    // STEP 1: Identify forced matches - blank lines at the same position MUST match
+    let mut forced_matches = std::collections::HashSet::new();
+    let min_len = n.min(m);
+    for idx in 0..min_len {
+        let src_norm = normalize_line_for_comparison(&source[idx]);
+        let dest_norm = normalize_line_for_comparison(&dest[idx]);
+        if src_norm.is_empty() && dest_norm.is_empty() {
+            forced_matches.insert((idx, idx));
+        }
+    }
     
-    // Fill DP table - normalize empty/whitespace-only lines for comparison
-    // Allow empty lines to match more freely, but prefer matching non-empty lines
-    for i in 1..=n {
-        for j in 1..=m {
-            let src_norm = normalize_line_for_comparison(&source[i - 1]);
-            let dest_norm = normalize_line_for_comparison(&dest[j - 1]);
-            
-            if src_norm == dest_norm {
-                // Lines match (normalized)
-                // For empty lines, always match if at same position, otherwise prefer matching if close
-                if src_norm.is_empty() {
-                    // Empty lines at the same position should always match
-                    if i == j {
-                        // Same position - always match blank lines
+    // STEP 2: Build alignment by processing forced matches first, then LCS for the rest
+    let mut aligned = Vec::new();
+    let mut src_used = std::collections::HashSet::new();
+    let mut dest_used = std::collections::HashSet::new();
+    
+    // First, add all forced matches
+    let mut forced_alignments: Vec<(usize, usize)> = forced_matches.iter().copied().collect();
+    forced_alignments.sort(); // Process in order
+    
+    for (src_idx, dest_idx) in forced_alignments {
+        aligned.push(LineAlignment::Both(src_idx, dest_idx));
+        src_used.insert(src_idx);
+        dest_used.insert(dest_idx);
+    }
+    
+    // STEP 3: Build remaining source and dest lines (excluding forced matches)
+    let mut remaining_src: Vec<(usize, String)> = Vec::new();
+    let mut remaining_dest: Vec<(usize, String)> = Vec::new();
+    
+    for i in 0..n {
+        if !src_used.contains(&i) {
+            remaining_src.push((i, source[i].clone()));
+        }
+    }
+    
+    for j in 0..m {
+        if !dest_used.contains(&j) {
+            remaining_dest.push((j, dest[j].clone()));
+        }
+    }
+    
+    // STEP 5: Run LCS on remaining lines
+    if !remaining_src.is_empty() && !remaining_dest.is_empty() {
+        let remaining_src_lines: Vec<String> = remaining_src.iter().map(|(_, s)| s.clone()).collect();
+        let remaining_dest_lines: Vec<String> = remaining_dest.iter().map(|(_, s)| s.clone()).collect();
+        
+        let remaining_n = remaining_src_lines.len();
+        let remaining_m = remaining_dest_lines.len();
+        
+        // DP table for remaining lines
+        let mut dp = vec![vec![0u32; remaining_m + 1]; remaining_n + 1];
+        
+        // Fill DP table
+            for i in 1..=remaining_n {
+            for j in 1..=remaining_m {
+                let src_line = &remaining_src_lines[i - 1];
+                let dest_line = &remaining_dest_lines[j - 1];
+                let src_norm = normalize_line_for_comparison(src_line);
+                let dest_norm = normalize_line_for_comparison(dest_line);
+                
+                // Get original indices to check position
+                let orig_src_idx = remaining_src[i - 1].0;
+                let orig_dest_idx = remaining_dest[j - 1].0;
+                
+                if src_norm == dest_norm {
+                    // For blank lines, only allow match if at same position in original files
+                    if src_norm.is_empty() {
+                        if orig_src_idx == orig_dest_idx {
+                            // Same position - allow match
+                            dp[i][j] = dp[i - 1][j - 1] + 1;
+                        } else {
+                            // Different positions - don't match blank lines
+                            dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
+                        }
+                    } else {
+                        // Non-blank matching lines - always match
+                        dp[i][j] = dp[i - 1][j - 1] + 1;
+                    }
+                } else {
+                    // Check if lines are similar
+                    let are_similar = lines_are_similar(src_line, dest_line);
+                    if are_similar {
                         dp[i][j] = dp[i - 1][j - 1] + 1;
                     } else {
-                        // Different positions - prefer matching if close or if it improves LCS
-                        let match_score = dp[i - 1][j - 1] + 1;
-                        let skip_score = dp[i - 1][j].max(dp[i][j - 1]);
-                        let positions_close = (i as i32 - j as i32).abs() <= 2;
-                        if positions_close || match_score > skip_score {
-                            dp[i][j] = match_score;
+                        dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
+                    }
+                }
+            }
+        }
+        
+        // Backtrack for remaining lines
+        let mut i = remaining_n;
+        let mut j = remaining_m;
+        let mut remaining_aligned = Vec::new();
+        
+        while i > 0 || j > 0 {
+            if i > 0 && j > 0 {
+                let src_line = &remaining_src_lines[i - 1];
+                let dest_line = &remaining_dest_lines[j - 1];
+                let src_norm = normalize_line_for_comparison(src_line);
+                let dest_norm = normalize_line_for_comparison(dest_line);
+                
+                if src_norm == dest_norm {
+                    // For blank lines, only match if they're at the same position in original files
+                    // This prevents matching blank lines that are at different positions
+                    let orig_src_idx = remaining_src[i - 1].0;
+                    let orig_dest_idx = remaining_dest[j - 1].0;
+                    let should_match_blank = if src_norm.is_empty() {
+                        // Only match blank lines if at same position in original files
+                        orig_src_idx == orig_dest_idx
+                    } else {
+                        true // Non-blank matching lines can always match
+                    };
+                    
+                    if should_match_blank && dp[i][j] == dp[i - 1][j - 1] + 1 {
+                        remaining_aligned.push((i - 1, j - 1, true)); // Both
+                        i -= 1;
+                        j -= 1;
+                    } else {
+                        if dp[i - 1][j] >= dp[i][j - 1] {
+                            remaining_aligned.push((i - 1, usize::MAX, false)); // SourceOnly
+                            i -= 1;
                         } else {
-                            dp[i][j] = skip_score;
+                            remaining_aligned.push((usize::MAX, j - 1, false)); // DestOnly
+                            j -= 1;
                         }
                     }
                 } else {
-                    // Non-empty matching lines - always match them
-                    dp[i][j] = dp[i - 1][j - 1] + 1;
-                }
-            } else {
-                dp[i][j] = dp[i - 1][j].max(dp[i][j - 1]);
-            }
-        }
-    }
-    
-    // Backtrack to build alignment
-    // Standard LCS backtracking - empty lines only match at same position (enforced in DP table)
-    let mut aligned = Vec::new();
-    let mut i = n;
-    let mut j = m;
-    
-    while i > 0 || j > 0 {
-        if i > 0 && j > 0 {
-            let src_norm = normalize_line_for_comparison(&source[i - 1]);
-            let dest_norm = normalize_line_for_comparison(&dest[j - 1]);
-            
-            if src_norm == dest_norm {
-                // Lines match (normalized)
-                // For blank lines at the same position, always match them
-                if src_norm.is_empty() && i == j {
-                    // Blank lines at same position - always match
-                    aligned.push(LineAlignment::Both(i - 1, j - 1));
-                    i -= 1;
-                    j -= 1;
-                } else if dp[i][j] == dp[i - 1][j - 1] + 1 {
-                    // This match was part of the LCS
-                    aligned.push(LineAlignment::Both(i - 1, j - 1));
-                    i -= 1;
-                    j -= 1;
-                } else {
-                    // This match wasn't part of the LCS - choose path that maintains LCS
-                    if dp[i - 1][j] >= dp[i][j - 1] {
-                        aligned.push(LineAlignment::SourceOnly(i - 1));
+                    let are_similar = lines_are_similar(src_line, dest_line);
+                    if are_similar && dp[i][j] == dp[i - 1][j - 1] + 1 {
+                        remaining_aligned.push((i - 1, j - 1, true)); // Both (modified)
                         i -= 1;
-                    } else {
-                        aligned.push(LineAlignment::DestOnly(j - 1));
                         j -= 1;
+                    } else if dp[i - 1][j] > dp[i][j - 1] {
+                        remaining_aligned.push((i - 1, usize::MAX, false)); // SourceOnly
+                        i -= 1;
+                    } else if dp[i][j - 1] > dp[i - 1][j] {
+                        remaining_aligned.push((usize::MAX, j - 1, false)); // DestOnly
+                        j -= 1;
+                    } else {
+                        remaining_aligned.push((i - 1, usize::MAX, false)); // SourceOnly (tie)
+                        i -= 1;
                     }
                 }
-            } else {
-                // Lines don't match - choose path that maintains LCS
-                // Check if lines are similar enough to show as modified (Both) vs separate (SourceOnly/DestOnly)
-                let src_line = &source[i - 1];
-                let dest_line = &dest[j - 1];
-                
-                // If lines share significant content, show as Both (modified) for word-level diff
-                // Otherwise, show as separate insertions/deletions
-                let are_similar = lines_are_similar(src_line, dest_line);
-                
-                if are_similar {
-                    // Lines are similar - show as Both (modified) for word-level highlighting
-                    aligned.push(LineAlignment::Both(i - 1, j - 1));
-                    i -= 1;
-                    j -= 1;
-                } else if dp[i - 1][j] > dp[i][j - 1] {
-                    // Removing from source maintains better LCS
-                    aligned.push(LineAlignment::SourceOnly(i - 1));
-                    i -= 1;
-                } else if dp[i][j - 1] > dp[i - 1][j] {
-                    // Removing from dest maintains better LCS
-                    aligned.push(LineAlignment::DestOnly(j - 1));
-                    j -= 1;
-                } else {
-                    // Tie - prefer showing as separate changes
-                    aligned.push(LineAlignment::SourceOnly(i - 1));
-                    i -= 1;
-                }
+            } else if i > 0 {
+                remaining_aligned.push((i - 1, usize::MAX, false)); // SourceOnly
+                i -= 1;
+            } else if j > 0 {
+                remaining_aligned.push((usize::MAX, j - 1, false)); // DestOnly
+                j -= 1;
             }
-        } else if i > 0 {
-            // Only source has lines left
-            aligned.push(LineAlignment::SourceOnly(i - 1));
-            i -= 1;
-        } else if j > 0 {
-            // Only dest has lines left
-            aligned.push(LineAlignment::DestOnly(j - 1));
-            j -= 1;
-        } else {
-            break;
+        }
+        
+        remaining_aligned.reverse();
+        
+        // Convert remaining alignments back to original indices
+        for (rem_src_idx, rem_dest_idx, is_both) in remaining_aligned {
+            if is_both {
+                let orig_src_idx = remaining_src[rem_src_idx].0;
+                let orig_dest_idx = remaining_dest[rem_dest_idx].0;
+                aligned.push(LineAlignment::Both(orig_src_idx, orig_dest_idx));
+            } else if rem_dest_idx == usize::MAX {
+                let orig_src_idx = remaining_src[rem_src_idx].0;
+                aligned.push(LineAlignment::SourceOnly(orig_src_idx));
+            } else {
+                let orig_dest_idx = remaining_dest[rem_dest_idx].0;
+                aligned.push(LineAlignment::DestOnly(orig_dest_idx));
+            }
+        }
+    } else {
+        // Handle remaining SourceOnly or DestOnly lines
+        for (orig_idx, _) in remaining_src {
+            aligned.push(LineAlignment::SourceOnly(orig_idx));
+        }
+        for (orig_idx, _) in remaining_dest {
+            aligned.push(LineAlignment::DestOnly(orig_idx));
         }
     }
     
-    // Reverse because we built backwards
-    aligned.reverse();
-    aligned
+    // STEP 6: Post-process to handle blank lines following SourceOnly/DestOnly
+    // Blank lines immediately following added/removed lines should also be SourceOnly/DestOnly
+    // This matches VSCode behavior where blank lines below additions are shown as bright
+    let mut processed_aligned = aligned;
+    
+    // Find SourceOnly lines and check if next line is a blank Both alignment
+    for i in 0..processed_aligned.len() {
+        match processed_aligned[i] {
+            LineAlignment::SourceOnly(src_idx) => {
+                // Look for a Both alignment at src_idx + 1 that's blank
+                for j in 0..processed_aligned.len() {
+                    if let LineAlignment::Both(next_src_idx, _) = processed_aligned[j] {
+                        if next_src_idx == src_idx + 1 {
+                            let next_src_line = &source[next_src_idx];
+                            if normalize_line_for_comparison(next_src_line).is_empty() {
+                                // Convert to SourceOnly
+                                processed_aligned[j] = LineAlignment::SourceOnly(next_src_idx);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            LineAlignment::DestOnly(dest_idx) => {
+                // Look for a Both alignment at dest_idx + 1 that's blank
+                for j in 0..processed_aligned.len() {
+                    if let LineAlignment::Both(_, next_dest_idx) = processed_aligned[j] {
+                        if next_dest_idx == dest_idx + 1 {
+                            let next_dest_line = &dest[next_dest_idx];
+                            if normalize_line_for_comparison(next_dest_line).is_empty() {
+                                // Convert to DestOnly
+                                processed_aligned[j] = LineAlignment::DestOnly(next_dest_idx);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    
+    // STEP 7: Sort alignments by source index to maintain order
+    processed_aligned.sort_by(|a, b| {
+        let a_src = match a {
+            LineAlignment::Both(s, _) | LineAlignment::SourceOnly(s) => *s,
+            LineAlignment::DestOnly(_) => usize::MAX, // Put DestOnly at end of their source position
+        };
+        let b_src = match b {
+            LineAlignment::Both(s, _) | LineAlignment::SourceOnly(s) => *s,
+            LineAlignment::DestOnly(_) => usize::MAX,
+        };
+        a_src.cmp(&b_src)
+    });
+    
+    processed_aligned
 }
 
 /// Compute word-level diff for source line

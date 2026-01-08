@@ -498,7 +498,7 @@ fn add_source_only_line(
     }
     
     // If next line is blank, show it as changed below the added line (bright, like VSCode)
-    if let Some((next_src_idx, next_dest_idx)) = next_blank_indices {
+    if let Some((next_src_idx, _next_dest_idx)) = next_blank_indices {
         let next_src_line = &source_lines[next_src_idx];
         
         // Create blank line with bright highlighting (like VSCode shows blank lines below added lines)
@@ -553,7 +553,7 @@ fn add_dest_only_line(
     }
     
     // If next line is blank, show it as changed below the added line (bright, like VSCode)
-    if let Some((next_src_idx, next_dest_idx)) = next_blank_indices {
+    if let Some((_next_src_idx, next_dest_idx)) = next_blank_indices {
         let next_dest_line = &dest_lines[next_dest_idx];
         
         // Create blank line with bright highlighting (like VSCode shows blank lines below added lines)
@@ -617,7 +617,7 @@ fn create_highlighted_lines(
     line_num: usize,
     diffs: &[(String, bool)],
     text_width: usize,
-    gutter_width: usize,
+    _gutter_width: usize,
     max_line_digits: usize,
     base_style: ratatui::style::Style,
     highlight_style: ratatui::style::Style,
