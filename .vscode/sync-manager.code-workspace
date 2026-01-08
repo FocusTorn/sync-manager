@@ -1,0 +1,126 @@
+{
+    "folders": [ //>
+        {
+            "path": ".."
+        }
+    ], //<
+    "settings": {
+        
+    
+        
+        // WORKSPACE_ROOT -->>
+        // These settings inject the variable into any new terminal session
+        "terminal.integrated.env.windows": {
+            "WORKSPACE_ROOT": "${workspaceFolder}"
+        },
+        "terminal.integrated.env.osx": {
+            "WORKSPACE_ROOT": "${workspaceFolder}"
+        },
+        "terminal.integrated.env.linux": {
+            "WORKSPACE_ROOT": "${workspaceFolder}"
+        },
+
+        //--------------------------------------------------------------------<<
+        
+        "terminal.integrated.cwd": "D:\\_dev\\_Projects\\sync-manager",
+
+        
+        "explorer.compactFolders": true,        
+        
+        // "files.watcherExclude": { //>
+        //     "**/.git/objects/**": true,
+        //     "**/.git/subtree-cache/**": true,
+        //     "**/node_modules/**": true,
+        //     "**/.uv/**": true,
+        //     "**/venv/**": true,
+        //     "**/.venv/**": true,
+        //     "**/ENV/**": true,
+        //     "**/env/**": true,
+        //     "**/__pycache__/**": true,
+        //     "**/build/**": true,
+        //     "**/dist/**": true,
+        //     "**/.eggs/**": true,
+        //     "**/*.egg-info/**": true,
+        //     "**/esp-idf/**": true,
+        //     "**/Arduino/**": true,
+        //     "**/__removed/**": true,
+        //     "**/.vscode/**": true,
+        //     "**/.idea/**": true,
+            
+        //     "**/_shared-resources/**": false,
+        //     "**/___shared/**": false,
+            
+            
+        // }, //<
+        // "search.exclude": { //>
+        //     "**/node_modules": true,
+        //     "**/.uv": true,
+        //     "**/venv": true,
+        //     "**/.venv": true,
+        //     "**/ENV": true,
+        //     "**/env": true,
+        //     "**/__pycache__": true,
+        //     "**/build": true,
+        //     "**/dist": true,
+        //     "**/.eggs": true,
+        //     "**/*.egg-info": true,
+        //     "**/esp-idf": true,
+        //     "**/Arduino": true,
+        //     "**/__removed": true,
+        //     "**/_libs": true,
+        //     "**/_projects": true,
+        
+        //     "**/.git": true,
+        //     "**/.vscode": true,
+        //     "**/.idea": true,
+        //     "**/.cursor": true,
+        //     "**/uv.lock": true,
+            
+        //     "**/_shared-resources": false,
+        //     "**/___shared": false,
+        // }, //<
+        // "files.exclude": { //>
+        //     "**/.git": true,
+        //     "**/.DS_Store": true,
+        //     "**/Thumbs.db": true
+        // }, //<
+        
+
+        // // WSDF ----------------------------------------------------------------------------------->> 
+        // //------------------------------------------------------------------------------------------------------------<<
+        
+        
+        // // cursorpyright  ----------------------------------------------------->> 
+        // "cursorpyright.analysis.diagnosticMode": "openFilesOnly",
+        // "cursorpyright.analysis.typeCheckingMode": "basic",
+        // "cursorpyright.analysis.logLevel": "Trace",
+        // "cursorpyright.analysis.exclude": [ //>
+        //     "reference/**",
+        //     "esp-idf/**",
+        //     "**/site-packages/**",
+        //     "**/*removed/**",
+        // ], //<
+        // "cursorpyright.analysis.ignore": [ //>
+            
+        //     "reference/**",
+        //     "esp-idf/**",
+        //     "**/site-packages/**",
+        //     "**/*removed/**",
+        // ],
+       
+        
+        // //----------------------------------------------------------------------------------------<<
+   
+   
+        // "workbench.colorCustomizations": {
+        //     "[Cursor Dark]": {}
+        // }, //<
+   
+   
+        
+        
+        
+    }
+}
+
+
